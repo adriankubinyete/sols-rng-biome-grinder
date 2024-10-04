@@ -75,52 +75,12 @@ class System {
     }
   }
 
-  // ----------------- screen-related -----------------
+  // ----------------- screenshot buffer related -----------------
 
-  async ResizeBitmap(bitmap, newWidth, newHeight) {
-    const _FUNCTION = "System:ResizeBitmap";
-
-    let resizedBuffer = await sharp(bitmap.buffer, {
-      raw: {
-        width: bitmap.width,
-        height: bitmap.height,
-        channels: 4,
-      },
-    })
-      .resize(newWidth, newHeight)
-      .raw()
-      .toBuffer();
-
-    return {
-      buffer: resizedBuffer,
-      width: newWidth,
-      height: newHeight, 
-    };
-  }
-
-  async BitmapToFile(bitmap, output) {
-    const _FUNCTION = "System:BitmapToFile";
-
-    // Converte o buffer raw (RGBA) para PNG e salva no sistema
-    return sharp(bitmap.buffer, {
-      raw: {
-        width: bitmap.width,  // Largura do bitmap
-        height: bitmap.height, // Altura do bitmap
-        channels: 4            // Número de canais (RGBA - 4 canais)
-      }
-    })
-      .png()
-      .toFile(output)
-      .then(info => {
-        console.log(`${_FUNCTION} - Image saved successfully:`, JSON.stringify(info));
-      })
-      .catch(err => {
-        throw new Error(`${_FUNCTION} - Failed to write image: ${err.message}`);
-      });
-  }
-
-  CoordinateToBitmap(coordinates, config = {}) {
-    const _FUNCTION = "System:CoordinateToBitmap";
+  // take coordinate [x1, y1] to [x2, y2] and return a buffer
+  // returns { buffer: Buffer, width: number, height: number }
+  CoordinateToRawBuffer(coordinates, config = {}) {
+    const _FUNCTION = "System:CoordinateToRawBuffer";
 
     // const {
     // } = config;
@@ -167,130 +127,137 @@ class System {
 
   }
 
-  // output should be the ENTIRE file path, WITH extension
-  // i.e: C:\Users\<USER>\Desktop\screenshot.png
-  Screenshot(coordinates, output, config = {}) {
+  // take screenshot from coordinate. 
+  // save at  src/tests/images/screenshot-${Date.now()}.png
+  // returns nothing
+  async Screenshot(coordinates, config = {}) {
     const _FUNCTION = "System:Screenshot";
 
-    const {
-      RETURN_BITMAP = config?.RETURN_BITMAP || true
-    } = config;
+    // const {
+    //   DELETE_AFTER_READ = config?.DELETE_AFTER_READ || true,
+    //   DELETE_ON_ERROR = config?.DELETE_ON_ERROR || false,
+    //   RETURN_RAW_TESSERACT_RESULT = config?.RETURN_RAW_TESSERACT_RESULT ||
+    //   false,
+    // } = config;
 
-    const [[x1, y1], [x2, y2]] = coordinates;
-    const width = x2 - x1;
-    const height = y2 - y1;
-
-    try {
-      const screenshot = robot.screen.capture(x1, y1, width, height);
-      const bitmapBuffer = screenshot.image;
-
-      let image = Jimp.fromBitmap({
-        data: bitmapBuffer,
-        width: screenshot.width,
-        height: screenshot.height,
-      });
-
-      image = this._manipulateImage(image);
-
-      image.write(output);
-
-      if (RETURN_BITMAP) {
-        return bitmapBuffer;
-      }
-
-      return;
-    } catch (error) {
-      console.error(
-        `${_FUNCTION}: Failed to save image to "${output}". Reason: ${error.message}`
-      );
-      throw error;
-    }
-  }
-
-  // TODO(adrian): implement ocr from bitmap
-  async OCRfromBitmap(bitmapBuffer, config = {}) {
-    const _FUNCTION = "System:OCRfromBitmap";
-    const {
-      DELETE_AFTER_READ = config?.DELETE_AFTER_READ || true,
-      DELETE_ON_ERROR = config?.DELETE_ON_ERROR || false,
-      RETURN_RAW_TESSERACT_RESULT = config?.RETURN_RAW_TESSERACT_RESULT ||
-      false,
-    } = config;
-
-    const image = path.resolve(`src/tests/images/${imageName}`);
-    let ocrResult;
-    try {
-      // reading the image
-      ocrResult = await Tesseract.recognize(bitmapBuffer);
-    } catch (error) {
-      if (DELETE_ON_ERROR) {
-        console.log(
-          `${_FUNCTION}: Deleting image file: "${image}" because we got an error.`
-        );
-        if (fs.existsSync(image)) {
-          fs.unlinkSync(image);
-        }
-      } else {
-        console.log(
-          `${_FUNCTION}: We got an error, but config says to not delete the image! "${image}"`
-        );
-      }
-      throw error;
-    }
-  }
-
-  async OCRfromScreen(coordinates, config = {}) {
-    const _FUNCTION = "System:OCRFromScreen";
-
-    const {
-      DELETE_AFTER_READ = config?.DELETE_AFTER_READ || true,
-      DELETE_ON_ERROR = config?.DELETE_ON_ERROR || false,
-      RETURN_RAW_TESSERACT_RESULT = config?.RETURN_RAW_TESSERACT_RESULT ||
-      false,
-    } = config;
-
-    // generating a random image name
     const imageName = `screenshot-${Date.now()}.png`;
     const image = path.resolve(`src/tests/images/${imageName}`);
-    let ocrResult;
-    try {
-      // taking the screenshot
-      this.Screenshot(coordinates, image);
-      // reading the image
-      ocrResult = await Tesseract.recognize(image);
-    } catch (error) {
-      if (DELETE_ON_ERROR) {
-        console.log(
-          `${_FUNCTION}: Deleting image file: "${image}" because we got an error.`
-        );
-        if (fs.existsSync(image)) {
-          fs.unlinkSync(image);
-        }
-      } else {
-        console.log(
-          `${_FUNCTION}: We got an error, but config says to not delete the image! "${image}"`
-        );
-      }
 
-      console.error(
-        `${_FUNCTION}: Failed to read screen at "${coordinates}". Reason: ${error.message}`
-      );
-    }
-
-    if (DELETE_AFTER_READ) {
-      fs.unlinkSync(image);
-    }
-
-    if (!ocrResult) {
-      throw new Error(`Failed to read screen at "${coordinates}".`);
-    }
-
-    if (RETURN_RAW_TESSERACT_RESULT) {
-      return ocrResult;
-    }
-
-    return { text: ocrResult.data.text, confidence: ocrResult.data.confidence };
+    const rawBuffer = this.CoordinateToRawBuffer(coordinates);
+    await this.SaveRawBufferToFile(rawBuffer, image);
+    console.log('------- SCREENSHOT DONE --------')
+    return;
   }
+
+  // filter color from buffer
+  // returns { buffer: Buffer, width: number, height: number }
+  async ApplyColorMatrixToRawBuffer(bitmap, matrix) {
+    const _FUNCTION = "System:ApplyColorMatrixToRawBuffer";
+
+    // console.log(JSON.stringify(bitmap.buffer))
+
+    const data = bitmap.buffer;
+
+    for (let i = 0; i < data.length; i += 4) {
+      const r = data[i]; // Red
+      const g = data[i + 1]; // Green
+      const b = data[i + 2]; // Blue
+      const a = data[i + 3]; // Alpha
+
+      // Aplica a matriz de cores
+      data[i] = Math.min(
+        255,
+        Math.max(0, matrix[0] * r + matrix[1] * g + matrix[2] * b + matrix[3] * a)
+      ); // New Red
+      data[i + 1] = Math.min(
+        255,
+        Math.max(0, matrix[5] * r + matrix[6] * g + matrix[7] * b + matrix[8] * a)
+      ); // New Green
+      data[i + 2] = Math.min(
+        255,
+        Math.max(
+          0,
+          matrix[10] * r + matrix[11] * g + matrix[12] * b + matrix[13] * a
+        )
+      ); // New Blue
+      // Alpha não é alterado
+    }
+
+    return bitmap;
+  }
+
+  // resize image from buffer
+  // returns { buffer: Buffer, width: number, height: number }
+  async ResizeFromRawBuffer(bitmap, newWidth, newHeight) {
+    const _FUNCTION = "System:ResizeFromRawBuffer";
+
+    let resizedBuffer = await sharp(bitmap.buffer, {
+      raw: {
+        width: bitmap.width,
+        height: bitmap.height,
+        channels: 4,
+      },
+    })
+      .resize(newWidth, newHeight)
+      .raw()
+      .toBuffer();
+
+    return {
+      buffer: resizedBuffer,
+      width: newWidth,
+      height: newHeight,
+    };
+  }
+
+  // save buffer to filesystem
+  // returns { buffer: Buffer, width: number, height: number }
+  async SaveRawBufferToFile(bitmap, output) {
+    const _FUNCTION = "System:SaveRawBufferToFile";
+
+    // Converte o buffer raw (RGBA) para PNG e salva no sistema
+    return sharp(bitmap.buffer, {
+      raw: {
+        width: bitmap.width,  // Largura do bitmap
+        height: bitmap.height, // Altura do bitmap
+        channels: 4            // Número de canais (RGBA - 4 canais)
+      }
+    })
+      .png()
+      .toFile(output)
+      .then(info => {
+        console.log(`${_FUNCTION} - Image saved successfully:`, JSON.stringify(info));
+      })
+      .catch(err => {
+        throw new Error(`${_FUNCTION} - Failed to write image: ${err.message}`);
+      });
+  }
+
+  // read text from buffer
+  // returns { text: string, confidence: number } // (and some other things from Tesseract.js ocr)
+  async OCRfromRawBuffer(bitmap) {
+    const _FUNCTION = "System:OCRfromRawBuffer";
+    try {
+
+      // convertendo o buffer raw RGBA para PNG
+      const pngBuffer = await sharp(bitmap.buffer, {
+        raw: {
+          width: bitmap.width,
+          height: bitmap.height,
+          channels: 4 // RGBA
+        }
+      }).png().toBuffer();
+
+      // passando o buffer pro tesseract reconhecer
+      const { data: ocrResult } = await Tesseract.recognize(pngBuffer, 'eng');
+
+      // console.log('Recognized text:', ocrResult.text);
+      return ocrResult
+    } catch (err) {
+      console.error(`${_FUNCTION} - Error recognizing text:`, err);
+      throw err;
+    }
+  }
+
 }
 
 module.exports = {
