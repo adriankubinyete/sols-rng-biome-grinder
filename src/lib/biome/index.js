@@ -1,6 +1,9 @@
 // should have code related to biome-recognition
 // use ocr to screenshot biome
 // map the ocr for a biome value
+const path = require("path");
+const { System } = require(path.resolve("src/lib/system"));
+const { Roblox } = require(path.resolve("src/lib/roblox"));
 
 const SIMILAR = {
   1: "l",
@@ -111,6 +114,37 @@ class Biomes {
     };
   }
 
+  // returns bitmap buffer from current biome
+  async getAsBitmap(config = {}) {
+    const _FUNCTION = "Biomes:getAsBitmap";
+
+    const { 
+      // WRITE_TO_FILE = config?.WRITE_TO_FILE || false, // not implemented yet
+    } = config;
+
+    const { x, y, width, height } = Roblox.Position()
+    const X_ADJUSTMENT = 15
+    const Y_ADJUSTMENT = -4
+
+    // thanks @dolphsol for this
+    let x1 = x + X_ADJUSTMENT
+    let y1 = (y + Y_ADJUSTMENT) + height - height * 0.135 + ((height / 600) - 1) * 10
+    let x2 = x1 + (width * 0.15) // trying to normalize biome screenshot size
+    let y2 = y1 + (height * 0.03)
+    const currentBiomeCoordinates = [[x1, y1], [x2, y2]];
+
+    return await System.CoordinateToBitmap(currentBiomeCoordinates);
+  }
+
+  prepareBitmapForOCR(bitmap, config = {}) {
+    const _FUNCTION = "Biomes:prepareBitmapForOCR";
+
+    const colorMatrix = [
+      2, 0, 0, 0, 0, 0, 1.5, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0.2,
+      0, 1,
+  ];
+  }
+
   identify(ocrResult, config = {}) {
     // adapted from dolphsol's biome detection, check them out for a full macro!
     // https://github.com/BuilderDolphin/dolphSol-Macro
@@ -137,11 +171,11 @@ class Biomes {
     for (let i = 0; i < Object.keys(this.configuration).length; i++) {
       const biomeKey = Object.keys(this.configuration)[i]; // biome name
 
-    //   if (DEBUG_SCAN) {
-    //     console.log(
-    //       `${_FUNCTION}: [PROB:${foundBiome}] Checking biome "${biomeKey}".`
-    //     );
-    //   }
+      //   if (DEBUG_SCAN) {
+      //     console.log(
+      //       `${_FUNCTION}: [PROB:${foundBiome}] Checking biome "${biomeKey}".`
+      //     );
+      //   }
 
       if (["Glitch", "Unknown"].includes(biomeKey)) {
         continue;

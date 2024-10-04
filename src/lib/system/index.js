@@ -5,9 +5,11 @@
 const path = require("path");
 const robot = require("robotjs"); // screen to bitmap, and user input
 const { Jimp } = require("jimp"); // bitmap to image, and image manipulation
+const sharp = require("sharp"); // bitmap to image and image manipulation (manipulates better than jimp)
 const Tesseract = require("tesseract.js"); // image to text (ocr)
 const fs = require("fs"); // check file exists, unlink image files
 const nwm = require("node-window-manager");
+const { error } = require("console");
 const windowManager = {
   // this is so dumb
   ...nwm.addon,
@@ -75,12 +77,104 @@ class System {
 
   // ----------------- screen-related -----------------
 
+  async ResizeBitmap(bitmap, newWidth, newHeight) {
+    const _FUNCTION = "System:ResizeBitmap";
+
+    let resizedBuffer = await sharp(bitmap.buffer, {
+      raw: {
+        width: bitmap.width,
+        height: bitmap.height,
+        channels: 4,
+      },
+    })
+      .resize(newWidth, newHeight)
+      .raw()
+      .toBuffer();
+
+    return {
+      buffer: resizedBuffer,
+      width: newWidth,
+      height: newHeight, 
+    };
+  }
+
+  async BitmapToFile(bitmap, output) {
+    const _FUNCTION = "System:BitmapToFile";
+
+    // Converte o buffer raw (RGBA) para PNG e salva no sistema
+    return sharp(bitmap.buffer, {
+      raw: {
+        width: bitmap.width,  // Largura do bitmap
+        height: bitmap.height, // Altura do bitmap
+        channels: 4            // Número de canais (RGBA - 4 canais)
+      }
+    })
+      .png()
+      .toFile(output)
+      .then(info => {
+        console.log(`${_FUNCTION} - Image saved successfully:`, JSON.stringify(info));
+      })
+      .catch(err => {
+        throw new Error(`${_FUNCTION} - Failed to write image: ${err.message}`);
+      });
+  }
+
+  CoordinateToBitmap(coordinates, config = {}) {
+    const _FUNCTION = "System:CoordinateToBitmap";
+
+    // const {
+    // } = config;
+    const [[x1, y1], [x2, y2]] = coordinates;
+    const width = x2 - x1;
+    const height = y2 - y1;
+
+    try {
+      const screenshot = robot.screen.capture(x1, y1, width, height);
+      const image = Buffer.alloc(screenshot.width * screenshot.height * 4); // RGBA (4 bytes por pixel)
+
+      // Copiando dados do bitmap do robotjs para o buffer
+      for (let i = 0; i < screenshot.width * screenshot.height; i++) {
+        const index = i * 4;
+        const color = screenshot.image.readUInt32LE(i * 4);
+
+        // corrigindo a ordem dos canais de cores (BGRa -> RGBa)
+        image[index] = (color >> 16) & 0xff;  // R (vem de B)
+        image[index + 1] = (color >> 8) & 0xff; // G (permanece igual)
+        image[index + 2] = color & 0xff;  // B (vem de R)
+        image[index + 3] = 255;  // A (opacidade total)
+      }
+
+      const ourBuffer = {
+        buffer: image,
+        width: screenshot.width,
+        height: screenshot.height,
+      }
+
+      // console.log('------------------')
+      // console.log('RobotJS buffer: ', screenshot.image)
+      // console.log('------------------')
+      // console.log('Our buffer: ', ourBuffer)
+
+      return ourBuffer;
+
+      // return screenshot.image;
+    } catch (error) {
+      console.error(
+        `${_FUNCTION}: Failed to Screenshot ${coordinates}. Reason: ${error.message}`
+      );
+      throw error;
+    }
+
+  }
+
   // output should be the ENTIRE file path, WITH extension
   // i.e: C:\Users\<USER>\Desktop\screenshot.png
   Screenshot(coordinates, output, config = {}) {
     const _FUNCTION = "System:Screenshot";
 
-    const { RETURN_IMAGE_PATH = config?.RETURN_IMAGE_PATH || true } = config;
+    const {
+      RETURN_BITMAP = config?.RETURN_BITMAP || true
+    } = config;
 
     const [[x1, y1], [x2, y2]] = coordinates;
     const width = x2 - x1;
@@ -100,8 +194,8 @@ class System {
 
       image.write(output);
 
-      if (RETURN_IMAGE_PATH) {
-        return output;
+      if (RETURN_BITMAP) {
+        return bitmapBuffer;
       }
 
       return;
@@ -120,7 +214,7 @@ class System {
       DELETE_AFTER_READ = config?.DELETE_AFTER_READ || true,
       DELETE_ON_ERROR = config?.DELETE_ON_ERROR || false,
       RETURN_RAW_TESSERACT_RESULT = config?.RETURN_RAW_TESSERACT_RESULT ||
-        false,
+      false,
     } = config;
 
     const image = path.resolve(`src/tests/images/${imageName}`);
@@ -152,7 +246,7 @@ class System {
       DELETE_AFTER_READ = config?.DELETE_AFTER_READ || true,
       DELETE_ON_ERROR = config?.DELETE_ON_ERROR || false,
       RETURN_RAW_TESSERACT_RESULT = config?.RETURN_RAW_TESSERACT_RESULT ||
-        false,
+      false,
     } = config;
 
     // generating a random image name
