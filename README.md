@@ -50,6 +50,8 @@ I will assume you are running on Windows. This program has no confirmed compatib
 
 I will also assume your screen resolution is AT LEAST 1920x1080 (FullHD). Things gets bad on lower resolution. (Clicks happens at wrong elements) (It might work, but it can't be REALLY SMALL)
 
+I have tested the program in FHD, QHD (2k) and UHD (4k). FHD and QHD works as intended, FHD is broken (sorry for now).
+
 * First, install NodeJS. https://nodejs.org/en/download/prebuilt-installer
 * Pay attention to the install menu. You will need to install the Chocolatey pre-requisites too.
 * Download this repository as a .zip.
