@@ -3,14 +3,15 @@
 // readscreen function
 // taskkill command
 const path = require("path");
+const { CONFIGURATION } = require(path.resolve("src/config"));
 const robot = require("robotjs"); // screen to bitmap, and user input
-const { Jimp } = require("jimp"); // bitmap to image, and image manipulation
 const sharp = require("sharp"); // bitmap to image and image manipulation (manipulates better than jimp)
 const Tesseract = require("tesseract.js"); // image to text (ocr)
 const fs = require("fs"); // check file exists, unlink image files
+const { Logger } = require( path.resolve("src/lib/utils/logger") );
+const log = new Logger('System', false).setLevel(999).setLocation(path.resolve("logs/srbg.log")).create()
 const nwm = require("node-window-manager");
-const { error } = require("console");
-const windowManager = {
+const WindowManager = {
   // this is so dumb
   ...nwm.addon,
   ...nwm.windowManager,
@@ -49,6 +50,15 @@ class System {
     // *manipulations here, if any
 
     return image;
+  }
+
+  CurrentMousePosition() {
+    return robot.getMousePos();
+  }
+
+  getPrimaryMonitorInfo() {
+    const primaryMonitorId = WindowManager.getPrimaryMonitor().id;
+    return WindowManager.getMonitorInfo(primaryMonitorId);
   }
 
   // ----------------- commands -----------------
@@ -109,19 +119,11 @@ class System {
         width: screenshot.width,
         height: screenshot.height,
       }
-
-      // console.log('------------------')
-      // console.log('RobotJS buffer: ', screenshot.image)
-      // console.log('------------------')
-      // console.log('Our buffer: ', ourBuffer)
-
       return ourBuffer;
 
       // return screenshot.image;
     } catch (error) {
-      console.error(
-        `${_FUNCTION}: Failed to Screenshot ${coordinates}. Reason: ${error.message}`
-      );
+      log.error(`${_FUNCTION}: Failed to Screenshot ${coordinates}. Reason: ${error.message}`);
       throw error;
     }
 
@@ -145,7 +147,6 @@ class System {
 
     const rawBuffer = this.CoordinateToRawBuffer(coordinates);
     await this.SaveRawBufferToFile(rawBuffer, image);
-    console.log('------- SCREENSHOT DONE --------')
     return;
   }
 
@@ -153,8 +154,6 @@ class System {
   // returns { buffer: Buffer, width: number, height: number }
   async ApplyColorMatrixToRawBuffer(bitmap, matrix) {
     const _FUNCTION = "System:ApplyColorMatrixToRawBuffer";
-
-    // console.log(JSON.stringify(bitmap.buffer))
 
     const data = bitmap.buffer;
 
@@ -225,9 +224,10 @@ class System {
       .png()
       .toFile(output)
       .then(info => {
-        console.log(`${_FUNCTION} - Image saved successfully:`, JSON.stringify(info));
+        log.unit(`${_FUNCTION} - Image saved successfully:`, JSON.stringify(info));
       })
       .catch(err => {
+        log.error(`${_FUNCTION} - Error saving image: ${err.message}`);
         throw new Error(`${_FUNCTION} - Failed to write image: ${err.message}`);
       });
   }
@@ -245,19 +245,51 @@ class System {
           height: bitmap.height,
           channels: 4 // RGBA
         }
-      }).png().toBuffer();
+      })
+      .withMetadata({density: 300}) // tesseract, i do not care about the dpi, please just read my image
+      .png()
+      .toBuffer();
+
+      const TESSERACT_OPTIONS = {
+        tessedit_pageseg_mode: 6, // 0:auto, 3:default:block, 6:single line, 7:single word
+        tessedit_char_whitelist: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789", // no special chars
+        dpi: 300
+      }
 
       // passando o buffer pro tesseract reconhecer
-      const { data: ocrResult } = await Tesseract.recognize(pngBuffer, 'eng');
+      const { data: ocrResult } = await Tesseract.recognize(pngBuffer, 'eng', TESSERACT_OPTIONS);
 
-      // console.log('Recognized text:', ocrResult.text);
+      log.unit(`${_FUNCTION} - OCR result: "${ocrResult.text.replace(/\n/g, "")}"`);
       return ocrResult
     } catch (err) {
-      console.error(`${_FUNCTION} - Error recognizing text:`, err);
+      log.error(`${_FUNCTION} - Error recognizing text:`, err);
       throw err;
     }
   }
 
+  // ----------------- input actions -----------------
+
+  MouseClick(x, y) {
+    robot.moveMouse(x - 5, y - 5); // teleports near objective
+    robot.moveMouseSmooth(x, y); // adjust "slowly" to objective
+    this.sleep(200)
+    robot.mouseClick("left")
+  }
+
+  MouseMove(x, y, config = {}) {
+    const _FUNCTION = "System:MouseMove";
+
+    const {
+      SLOW = config?.SLOW || false,
+    } = config;
+
+    if (SLOW) {
+      robot.moveMouseSmooth(x, y);
+    } else {
+      robot.moveMouse(x, y);
+    }
+
+  }
 }
 
 module.exports = {
