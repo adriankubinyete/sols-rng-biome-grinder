@@ -2,7 +2,9 @@
 images/*
 eng.traineddata
 .vscode
-src/tests/images/*
+src/tests/images/ocr-biome-failed/*.png
+src/tests/images/ocr-biome-failed/*.txt
+src/tests/images/*.png
 
 # Logs
 logs/*
