@@ -148,36 +148,6 @@ class Biomes {
     return await System.CoordinateToRawBuffer(currentBiomeCoordinates);
   }
 
-  // TODO(adrian): implement or delete this. not used as of now
-  // should contain image modifications before ocr
-  async prepareBufferForOCR(bitmap, config = {}) {
-    const _FUNCTION = "Biomes:prepareBufferForOCR";
-    const {
-      STRENGTH = config?.STRENGTH || 1, // for now only affects size
-    } = config;
-    let processedBuffer;
-
-    // enlarging image (this messes with ss alignment, be careful)
-    // TODO(adrian): make this align to the left, not to the center. can potentially lead to false-positives
-    log.trace(`${_FUNCTION} - STR:${STRENGTH} : Enlarging image...`);
-    const newWidth = Math.round(bitmap.width + (STRENGTH * 38));
-    const newHeight = Math.round(bitmap.height + (STRENGTH * 7.5));
-    processedBuffer = await System.ResizeFromRawBuffer(bitmap, newWidth, newHeight);
-
-    // applying the color matrix on the image (should help ocr)
-    log.trace(`${_FUNCTION} - STR:${STRENGTH} : Applying color matrix...`);
-    const colorMatrix = [
-      2, 0, 0, 0, 0,
-      0, 1.5, 0, 0, 0,
-      0, 0, 1, 0, 0,
-      0, 0, 0, 1, 0,
-      0, 0, 0.2, 0, 1,
-    ];
-    processedBuffer = await System.ApplyColorMatrixToRawBuffer(processedBuffer, colorMatrix);
-
-    return processedBuffer;
-  }
-
   // take some text and check the most likely biome
   // Unknown if couldn't determine biome
   // return { biome: string, confidence: number} // biome can be Unknown if not found any
@@ -290,18 +260,8 @@ class Biomes {
       IDENTIFYBIOME_THRESHOLD = config?.IDENTIFYBIOME_THRESHOLD || 0.7, // default is 0.70
     } = config;
 
-    // image editing matrix
-    const colorMatrix = [
-      2, 0, 0, 0, 0,
-      0, 1.5, 0, 0, 0,
-      0, 0, 1, 0, 0,
-      0, 0, 0, 0, 0,
-      1, 0, 0, 0, 0.2,
-      0, 1,
-    ];
     let idForSS = Date.now()
     let identifiedBiome
-
 
     // we will progressively increase the size of the image in each iteration that we did not find the biome
     // if we find a biome with confidence, we break out of the loop
@@ -309,7 +269,7 @@ class Biomes {
 
       // taking screenshot and reading it
       const rawBuffer = await this.getBiomeAsRawBuffer(); // generating buffer
-      const postprocessedBuffer = await this.prepareBufferForOCR(rawBuffer, {STRENGTH: index}); // filters to make ocr more accurate
+      const postprocessedBuffer = await System.prepareBufferForOCR(rawBuffer, {ENLARGE: true, MATRIX: true, STRENGTH: index}); // filters to make ocr more accurate
       const ocrResult = await System.OCRfromRawBuffer(postprocessedBuffer); // sending to tesseract ocr
 
       // checking if the ocr result maps to a valid biome

@@ -8,7 +8,7 @@ const robot = require("robotjs"); // screen to bitmap, and user input
 const sharp = require("sharp"); // bitmap to image and image manipulation (manipulates better than jimp)
 const Tesseract = require("tesseract.js"); // image to text (ocr)
 const fs = require("fs"); // check file exists, unlink image files
-const { Logger } = require( path.resolve("src/lib/utils/logger") );
+const { Logger } = require(path.resolve("src/lib/utils/logger"));
 const log = new Logger('System', false).setLevel(999).setLocation(path.resolve("logs/srbg.log")).create()
 const nwm = require("node-window-manager");
 const WindowManager = {
@@ -185,6 +185,48 @@ class System {
     return bitmap;
   }
 
+  async prepareBufferForOCR(bitmap, config = {}) {
+    const _FUNCTION = "System:prepareBufferForOCR";
+    const {
+      ENLARGE = config?.ENLARGE || true,
+      MATRIX = config?.MATRIX || true,
+      STRENGTH = config?.STRENGTH || 1, // for now only affects size
+      GRAYSCALE = config?.GRAYSCALE || true,
+    } = config;
+    let processedBuffer;
+
+    // enlarging image (this messes with ss alignment, be careful)
+    // TODO(adrian): make this align to the left, not to the center. can potentially lead to false-positives
+    if (ENLARGE) {
+      log.trace(`${_FUNCTION} - STR:${STRENGTH} : Enlarging image...`);
+      const newWidth = Math.round(bitmap.width + (STRENGTH * 38));
+      const newHeight = Math.round(bitmap.height + (STRENGTH * 7.5));
+      processedBuffer = await this.ResizeFromRawBuffer(bitmap, newWidth, newHeight);
+    }
+
+    // applying the color matrix on the image (should help ocr)
+    if (MATRIX) {
+      log.trace(`${_FUNCTION} - STR:${STRENGTH} : Applying color matrix...`);
+      const colorMatrix = [
+        2, 0, 0, 0, 0,
+        0, 1.5, 0, 0, 0,
+        0, 0, 1, 0, 0,
+        0, 0, 0, 1, 0,
+        0, 0, 0.2, 0, 1,
+      ];
+      processedBuffer = await this.ApplyColorMatrixToRawBuffer(processedBuffer, colorMatrix);
+    }
+
+    // Applying grayscale filter (if enabled)
+    if (GRAYSCALE) {
+      log.trace(`${_FUNCTION} - Applying grayscale filter...`);
+
+      processedBuffer = await this.GrayscaleRawBuffer(processedBuffer);
+    }
+
+    return processedBuffer;
+  }
+
   // resize image from buffer
   // returns { buffer: Buffer, width: number, height: number }
   async ResizeFromRawBuffer(bitmap, newWidth, newHeight) {
@@ -194,7 +236,7 @@ class System {
       raw: {
         width: bitmap.width,
         height: bitmap.height,
-        channels: 4,
+        channels: bitmap.buffer.length / (bitmap.width * bitmap.height),
       },
     })
       .resize(newWidth, newHeight)
@@ -208,17 +250,51 @@ class System {
     };
   }
 
+  async GrayscaleRawBuffer(bitmap) {
+    const _FUNCTION = "System:GrayscaleRawBuffer";
+
+    let grayscaleBuffer = await sharp(bitmap.buffer, {
+      raw: {
+        width: bitmap.width,
+        height: bitmap.height,
+        channels: bitmap.buffer.length / (bitmap.width * bitmap.height),
+      },
+    })
+      .toColourspace("b-w")
+      // .linear(1.5, 0) // test this later
+      .raw()
+      .toBuffer();
+
+    // DEBUG: save to file to check, if needed
+    // const GRAYSCALE_PATH = path.resolve(`src/tests/images/grayscale-${Date.now()}.png`);
+    // log.unit(`${_FUNCTION} - Saving the grayscale image to check: ${GRAYSCALE_PATH}`);
+    await this.SaveRawBufferToFile({
+      buffer: grayscaleBuffer,
+      width: bitmap.width,
+      height: bitmap.height
+    }, GRAYSCALE_PATH);
+
+    return {
+      buffer: grayscaleBuffer,
+      width: bitmap.width,
+      height: bitmap.height,
+    }
+  }
+
   // save buffer to filesystem
   // returns { buffer: Buffer, width: number, height: number }
   async SaveRawBufferToFile(bitmap, output) {
     const _FUNCTION = "System:SaveRawBufferToFile";
+
+    // Determinar o número de canais, se for em grayscale é 1, se for RGBA é 4.
+    const channels = bitmap.buffer.length / (bitmap.width * bitmap.height);
 
     // Converte o buffer raw (RGBA) para PNG e salva no sistema
     return sharp(bitmap.buffer, {
       raw: {
         width: bitmap.width,  // Largura do bitmap
         height: bitmap.height, // Altura do bitmap
-        channels: 4            // Número de canais (RGBA - 4 canais)
+        channels: channels            // Número de canais (RGBA - 4 canais)
       }
     })
       .png()
@@ -243,12 +319,12 @@ class System {
         raw: {
           width: bitmap.width,
           height: bitmap.height,
-          channels: 4 // RGBA
+          channels: bitmap.buffer.length / (bitmap.width * bitmap.height)
         }
       })
-      .withMetadata({density: 300}) // tesseract, i do not care about the dpi, please just read my image
-      .png()
-      .toBuffer();
+        .withMetadata({ density: 300 }) // tesseract, i do not care about the dpi, please just read my image
+        .png()
+        .toBuffer();
 
       const TESSERACT_OPTIONS = {
         tessedit_pageseg_mode: 6, // 0:auto, 3:default:block, 6:single line, 7:single word

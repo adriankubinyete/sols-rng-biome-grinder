@@ -597,11 +597,11 @@ class Roblox {
     const centerY = y + height / 2;
 
     // size of rectangle that holds the playbutton in the center
-    const buttonWidth = width * 0.40; // Example play button width
-    const buttonHeight = height * 0.40; // Example play button height
+    const buttonWidth = width * 0.30; // Example play button width
+    const buttonHeight = height * 0.20; // Example play button height
 
     // Shift the box 50 pixels down
-    const yOffset = height * 0.28;
+    const yOffset = height * 0.35;
 
     // Now calculate the relative position of the play button around the center, adjusted by 50 pixels down
     const x1 = centerX - buttonWidth / 2;
@@ -646,25 +646,26 @@ class Roblox {
     // trying to open collection
     log.trace(`${_FUNCTION}: Opening collection...`);
     this.OpenCollection();
-    System.sleep(1500);
+    System.sleep(500);
     this.OpenCollection();
 
     // now trying to close it
     log.trace(`${_FUNCTION}: Closing collection...`);
     this.CloseCollection(); // should ocr this is actually closed
-    System.sleep(1500); // fuck you, just in case  //TODO(adrian): remove this once OCR for this is implemented
+    System.sleep(500); // fuck you, just in case  //TODO(adrian): remove this once OCR for this is implemented
     this.CloseCollection(); // please?
 
     // blind click on "SKIP", just in case
     log.trace(`${_FUNCTION}: Blindly clicking "SKIP" button from "You've Found" prompt...`);
     this.ClickYouveFoundSkipButton();
-    System.sleep(1500);
+    System.sleep(500);
     this.ClickYouveFoundSkipButton();
 
 
     // now lets enable auto roll
     log.trace(`${_FUNCTION}: Enabling auto roll...`);
     this.ToggleAutoRoll(); // not sure if this works properly
+    System.sleep(500);
 
     // now aligning with wall
     log.trace(`${_FUNCTION}: Aligning biome label with wall with wall... (holding "A"+"S")`);
@@ -763,15 +764,18 @@ class Roblox {
       PLAY_BUTTON = this.getPlayButtonPosition();
 
       log.trace(`${_FUNCTION} - Looking for Play Button, iteration #${i}`);
+      log.unit('Play button position: ', PLAY_BUTTON.position);
 
       // screenshot playbutton position
       const screenshot = await System.CoordinateToRawBuffer(PLAY_BUTTON.position); // should perfectly capture the play button
 
+      const processedBuffer = await System.prepareBufferForOCR(screenshot, {ENLARGE: true, MATRIX: true, STRENGTH: i*1.5});
+
       // TESTING : saving the screenshot in a file just to check
-      // await System.SaveRawBufferToFile(screenshot, path.resolve("src/tests/images/playbuttontest.png"));
+      await System.SaveRawBufferToFile(processedBuffer, path.resolve("src/tests/images/PLEASE_WORK.png"));
 
       // reading buffer and checking if it says play
-      const ocrResult = await System.OCRfromRawBuffer(screenshot);
+      const ocrResult = await System.OCRfromRawBuffer(processedBuffer);
       const ocrText = ocrResult.text.toLowerCase();
       if (ocrText.includes("play")) {
         log.trace(`${_FUNCTION} - Found in iteration #${i}`);
@@ -789,7 +793,7 @@ class Roblox {
 
     // if play found, click button
     log.unit(`${_FUNCTION} - Play button found! Clicking...`);
-    System.MouseClick(PLAY_BUTTON.center.x, PLAY_BUTTON.center.y);
+    this.Click(PLAY_BUTTON.center.x, PLAY_BUTTON.center.y, { TYPE: 'relative_percent', CLICK: true, SLOW: false })
   }
 
 }

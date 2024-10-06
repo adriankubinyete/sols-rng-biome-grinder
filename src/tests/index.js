@@ -79,9 +79,13 @@ class SolsTests {
             const BUFFER_PLAY_BUTTON_SCREENSHOT = await System.CoordinateToRawBuffer(PLAY_BUTTON.position);
             // log.info(`${_FUNCTION}: Play button screenshot buffer: ${BUFFER_PLAY_BUTTON_SCREENSHOT.buffer}`);
 
+            // applying filters
+            log.info(`${_FUNCTION} - STEP 3: Processing image for better ocr accuracy...`);
+            const BUFFER_PROCESSED_PLAY_BUTTON_SCREENSHOT = await System.prepareBufferForOCR(BUFFER_PLAY_BUTTON_SCREENSHOT, { STRENGTH: 10 });
+
             // saving
             const OUTPUT_FILE = path.resolve("src/tests/images/tests_screenshot_playbutton.png");
-            log.info(`${_FUNCTION} - STEP 3: Saving screenshot to ${OUTPUT_FILE}`);
+            log.info(`${_FUNCTION} - STEP 4: Saving screenshot to ${OUTPUT_FILE}`);
             await System.SaveRawBufferToFile(BUFFER_PLAY_BUTTON_SCREENSHOT, OUTPUT_FILE);
         },
 
