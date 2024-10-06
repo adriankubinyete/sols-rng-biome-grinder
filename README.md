@@ -35,8 +35,11 @@ If we scale that using the same estimate, it should take around 12.5 hours for T
 
 # - The future?
 Well, I would love to see this idea implemented on a real macro. This is basically just a proof-of-concept that this works, it's not very user-friendly to utilize too...
-[ ] User interface (not sure if possible with my abilities)
-[ ] Auto use heavenly potions on specific, configurable biomes
+[ ] User interface (not sure if possible with my abilities) (probably can do with NodeJS electron-app)
+[ ] Auto use heavenly potions on specific, configurable biomes (scary!)
+[X] 1920x1080 (FHD) support
+[X] 2560x1440 (QHD) support
+[ ] 3840x2160 (UHD) support ( I'll fix this eventually, I don't have a UHD monitor to test unfortunately )
 
 # - How to set up?
 This project is NOT very user-friendly to utilize, it does not have an interface nor keys to stop the program easily.
@@ -50,7 +53,7 @@ I will assume you are running on Windows. This program has no confirmed compatib
 
 I will also assume your screen resolution is AT LEAST 1920x1080 (FullHD). Things gets bad on lower resolution. (Clicks happens at wrong elements) (It might work, but it can't be REALLY SMALL)
 
-I have tested the program in FHD, QHD (2k) and UHD (4k). FHD and QHD works as intended, UHD is broken (sorry for now).
+I have tested the program in FHD, QHD (2k) and UHD (4k). FHD and QHD works as intended, UHD is broken (sorry for now!).
 
 * First, install NodeJS. https://nodejs.org/en/download/prebuilt-installer
 * Pay attention to the install menu. You will need to install the Chocolatey pre-requisites too.
@@ -63,3 +66,5 @@ I have tested the program in FHD, QHD (2k) and UHD (4k). FHD and QHD works as in
 * Open your Command Prompt and run "`node -v`" to confirm NodeJS is installed.
 * Run `npm install` to install the necessary dependencies for this project.
 * Run `npm run app` to run the application. Before running the application, pay close attention: if you need to STOP the application, you need to go to that Command Prompt and press "CTRL+C", or simply close it.
+
+PS: I strongly recommend you clone this repository using git, so it gets easier for you to update it. You will probably have to configure things again (sorry for now!)
