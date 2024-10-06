@@ -113,7 +113,7 @@ class SolsTests {
             log.info(`${_FUNCTION} - STEP 1: Result: ${JSON.stringify(PLAY_BUTTON)}`);
 
             log.info(`${_FUNCTION} - STEP 2: Hovering over play button...`);
-            await Roblox.Click(PLAY_BUTTON.center.x, PLAY_BUTTON.center.y, { TYPE: 'absolute', CLICK: false, SLOW: true });
+            await Roblox.Click(PLAY_BUTTON.center.x, PLAY_BUTTON.center.y, { TYPE: 'relative_percent', CLICK: false, SLOW: true });
         },
 
         // should mouse hover on the auto roll click point
@@ -243,8 +243,8 @@ class SolsTests {
 
             // click playbutton
             // -- automation to be implemented --
-            log.warn(`${_FUNCTION} - STEP 3: --- PLEASE, CLICK ON THE PLAY BUTTON. WAITING 10 SECONDS...`);
-            System.sleep(10000);
+            log.warn(`${_FUNCTION} - STEP 3: --- PLEASE, CLICK ON THE PLAY BUTTON. WAITING 15 SECONDS...`);
+            System.sleep(15000);
 
             // wait like 5 seconds so black menu fades out
             log.warn(`${_FUNCTION} - STEP 4: WAITING POSSIBLE MENU FADE OUT...`);
@@ -276,8 +276,8 @@ class SolsTests {
             await this.CompleteRoutine.AllSideMenus();
 
             // click collection
-            log.warn(`${_FUNCTION} - STEP 10: --- PLEASE, CLICK ON THE COLLECTON MENU. WAITING 10 SECONDS...`);
-            System.sleep(10000);
+            log.warn(`${_FUNCTION} - STEP 10: --- PLEASE, CLICK ON THE COLLECTON MENU. WAITING 15 SECONDS...`);
+            System.sleep(15000);
             // -- to be implemented --
 
             // hover close collection

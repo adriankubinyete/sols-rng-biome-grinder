@@ -596,12 +596,12 @@ class Roblox {
     const centerX = x + width / 2;
     const centerY = y + height / 2;
 
-    // Adjust relative positions based on a specific size if needed (for the play button size)
-    const buttonWidth = width * 0.20; // Example play button width
-    const buttonHeight = height * 0.13; // Example play button height
+    // size of rectangle that holds the playbutton in the center
+    const buttonWidth = width * 0.40; // Example play button width
+    const buttonHeight = height * 0.40; // Example play button height
 
     // Shift the box 50 pixels down
-    const yOffset = height * 0.35;
+    const yOffset = height * 0.28;
 
     // Now calculate the relative position of the play button around the center, adjusted by 50 pixels down
     const x1 = centerX - buttonWidth / 2;
@@ -609,7 +609,10 @@ class Roblox {
     const x2 = centerX + buttonWidth / 2;
     const y2 = centerY + buttonHeight / 2 + yOffset;
 
-    return { type: 'absolute', position: [[x1, y1], [x2, y2]], center: { x: (x1 + x2) / 2, y: (y1 + y2) / 2 } }
+    // click location (should map to aboout center of the box)
+    50.92975206611571, 85.20992366412213
+
+    return { type: 'absolute', position: [[x1, y1], [x2, y2]], center: { x: 50, y: 85} }
   }
 
   getAutoRollButtonPosition() {

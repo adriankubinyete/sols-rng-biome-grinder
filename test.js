@@ -17,14 +17,15 @@ const wm = {
 (async () => {
 
 
+  // Roblox.MonitorMousePosition();
   // SolsTests.CompleteRoutine.PlayButton();
   // SolsTests.CompleteRoutine.IdentifyCurrentBiome();
   // SolsTests.CompleteRoutine.AllSideMenus();
   // SolsTests.Hover.Chat();
-  // SolsTests.Hover.AutoRoll();
+  SolsTests.Screenshot.PlayButton();
   // SolsTests.Hover.CloseCollection();
 
-  SolsTests.CompleteRoutine.SimulateServerRoll();
+  // SolsTests.CompleteRoutine.SimulateServerRoll();
 
   // Roblox.Window({AUTOCORRECT: true});
   // const [CLICK_X, CLICK_Y] = [  10.294117647058822, 7.396870554765292  ]
