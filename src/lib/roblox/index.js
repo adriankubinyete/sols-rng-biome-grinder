@@ -6,6 +6,7 @@ const robot = require("robotjs");
 const { Logger } = require(path.resolve("src/lib/utils/logger"));
 const log = new Logger('Roblox', false).setLevel(999).setLocation(path.resolve("logs/srbg.log")).create()
 const nwm = require("node-window-manager");
+const { get } = require("http");
 const windowManager = {
   // this is so dumb
   ...nwm.addon,
@@ -485,7 +486,7 @@ class Roblox {
   ToggleChat(config = {}) {
     const _FUNCTION = "Roblox:ToggleChat";
 
-    const CHAT_BUTTON_COORDINATES = { x: 80, y: 50 }
+    const CHAT_BUTTON_COORDINATES = this.getChatButtonPosition();
     this.Click(CHAT_BUTTON_COORDINATES.x, CHAT_BUTTON_COORDINATES.y, { TYPE: 'absolute', CLICK: true, SLOW: false })
   }
 
@@ -494,7 +495,7 @@ class Roblox {
   ToggleAutoRoll(config = {}) {
     const _FUNCTION = "Roblox:ToggleAutoRoll";
 
-    const AUTO_ROLL_BUTTON_COORDINATES = { x: 38.48039215686275, y: 94.31009957325746 }
+    const AUTO_ROLL_BUTTON_COORDINATES = this.getAutoRollButtonPosition();
     this.Click(AUTO_ROLL_BUTTON_COORDINATES.x, AUTO_ROLL_BUTTON_COORDINATES.y, { TYPE: 'relative_percent', CLICK: true, SLOW: false })
   }
 
@@ -508,7 +509,7 @@ class Roblox {
   CloseCollection(config = {}) {
     const _FUNCTION = "Roblox:CloseCollection";
 
-    const COLLECTION_BACK_BUTTON_COORDINATES = { x: 15.082644628099173, y: 11.641221374045802 }
+    const COLLECTION_BACK_BUTTON_COORDINATES = this.getCloseCollectionButtonPosition();
     this.Click(COLLECTION_BACK_BUTTON_COORDINATES.x, COLLECTION_BACK_BUTTON_COORDINATES.y, { TYPE: 'relative_percent', CLICK: true, SLOW: false })
   }
 
@@ -585,6 +586,50 @@ class Roblox {
 
   }
 
+  getPlayButtonPosition() {
+    const _FUNCTION = "Roblox:getPlayButtonPosition";
+
+    // Obtaining Roblox's window relative position
+    const { x, y, width, height } = this.Position()
+
+    // Calculate the center point (x, y)
+    const centerX = x + width / 2;
+    const centerY = y + height / 2;
+
+    // Adjust relative positions based on a specific size if needed (for the play button size)
+    const buttonWidth = width * 0.20; // Example play button width
+    const buttonHeight = height * 0.13; // Example play button height
+
+    // Shift the box 50 pixels down
+    const yOffset = height * 0.35;
+
+    // Now calculate the relative position of the play button around the center, adjusted by 50 pixels down
+    const x1 = centerX - buttonWidth / 2;
+    const y1 = centerY - buttonHeight / 2 + yOffset;
+    const x2 = centerX + buttonWidth / 2;
+    const y2 = centerY + buttonHeight / 2 + yOffset;
+
+    return { type: 'absolute', position: [[x1, y1], [x2, y2]], center: { x: (x1 + x2) / 2, y: (y1 + y2) / 2 } }
+  }
+
+  getAutoRollButtonPosition() {
+    const _FUNCTION = "Roblox:getAutoRollButtonPosition";
+    // absolute percent
+    return { type: 'relative_percent', x: 38.48039215686275, y: 94.31009957325746 }
+  }
+
+  getChatButtonPosition() {
+    const _FUNCTION = "Roblox:getChatButtonPosition";
+    // absolute
+    return { type: 'absolute', x: 80, y: 50 }
+  }
+
+  getCloseCollectionButtonPosition() {
+    const _FUNCTION = "Roblox:getCloseCollectionButtonPosition";
+    // absolute
+    return { type: 'absolute', x: 15.082644628099173, y: 11.641221374045802 }
+  }
+
   // ----------------- specific sols elements -----------------
 
   AlignCamera(config = {}) {
@@ -625,147 +670,126 @@ class Roblox {
   }
 
   async CheckIfWaitingServer(config = {}) {
-      const _FUNCTION = "Roblox:CheckIfWaitingServer";
-      const {
-        TIMEOUT = config?.TIMEOUT || 1000 * 60, // wait for server a maximum of 60, else we fail totally
-        MAX_ITERATIONS = config?.MAX_ITERATIONS || 30, // default 10 iterations in 10 seconds
-        INTERVAL = config?.INTERVAL || 2000, // intervalo de 2s entre cada OCR check
-      } = config;
+    const _FUNCTION = "Roblox:CheckIfWaitingServer";
+    const {
+      TIMEOUT = config?.TIMEOUT || 1000 * 60, // wait for server a maximum of 60, else we fail totally
+      MAX_ITERATIONS = config?.MAX_ITERATIONS || 30, // default 10 iterations in 10 seconds
+      INTERVAL = config?.INTERVAL || 2000, // intervalo de 2s entre cada OCR check
+    } = config;
 
-      // should check 5 times, if it finds, check one time per second until its gone or a timeout happens (took too long)
-      const EXPECTED_TEXT = "Waiting for an available server";
-      const SIMILARITY_THRESHOLD = 0.5; // good enough
-      let IS_WAITING_SERVER = false;
-      let i = 0;
-      const startTime = Date.now();
+    // should check 5 times, if it finds, check one time per second until its gone or a timeout happens (took too long)
+    const EXPECTED_TEXT = "Waiting for an available server";
+    const SIMILARITY_THRESHOLD = 0.5; // good enough
+    let IS_WAITING_SERVER = false;
+    let i = 0;
+    const startTime = Date.now();
 
-      const roblox = this.Position();
+    const roblox = this.Position();
 
-      // offset if needed
-      const FINAL_Y_OFFSET = -25; // for some reason roblox position is 16 pixels bigger than it should be
-      const FINAL_X_OFFSET = 0;
+    // offset if needed
+    const FINAL_Y_OFFSET = -25; // for some reason roblox position is 16 pixels bigger than it should be
+    const FINAL_X_OFFSET = 0;
 
-      const rectHeight = 30; // height of area to be checked
-      const rectWidthPercent = 0.25; // width of area to be checked (10% of screen width)
-      const rectWidth = rectWidthPercent * roblox.width; // rectangle width
-      const centerX = roblox.width / 2;  // X center of roblox window
-      const centerY = roblox.height / 2; // Y center of roblox window
-      // final coordinates
-      const y1 = (roblox.height - rectHeight) + FINAL_Y_OFFSET; // topo do retângulo
-      const y2 = (roblox.height) + FINAL_Y_OFFSET; // base do retângulo (alinhado com a borda inferior)
-      const x1 = (centerX - (rectWidth / 2)) + FINAL_X_OFFSET; // canto superior esquerdo
-      const x2 = (centerX + (rectWidth / 2)) + FINAL_X_OFFSET; // canto inferior direito
-      const SCREENSHOT_AREA = [[x1, y1], [x2, y2]];
+    const rectHeight = 30; // height of area to be checked
+    const rectWidthPercent = 0.25; // width of area to be checked (10% of screen width)
+    const rectWidth = rectWidthPercent * roblox.width; // rectangle width
+    const centerX = roblox.width / 2;  // X center of roblox window
+    const centerY = roblox.height / 2; // Y center of roblox window
+    // final coordinates
+    const y1 = (roblox.height - rectHeight) + FINAL_Y_OFFSET; // topo do retângulo
+    const y2 = (roblox.height) + FINAL_Y_OFFSET; // base do retângulo (alinhado com a borda inferior)
+    const x1 = (centerX - (rectWidth / 2)) + FINAL_X_OFFSET; // canto superior esquerdo
+    const x2 = (centerX + (rectWidth / 2)) + FINAL_X_OFFSET; // canto inferior direito
+    const SCREENSHOT_AREA = [[x1, y1], [x2, y2]];
 
-      // lets check if its waiting for server
-      while (i <= MAX_ITERATIONS) {
-        i++
-        const elapsedTime = Date.now() - startTime;
-        if (elapsedTime >= TIMEOUT) { throw new ApplicationExpectationFailed(`${_FUNCTION} - Private server init took too long. (${TIMEOUT / 1000}s timeout reached)`) };
-        if (i > MAX_ITERATIONS) { throw new ApplicationExpectationFailed(`${_FUNCTION} - Private server init took too long. (${MAX_ITERATIONS} iterations limit reached)`) };
+    // lets check if its waiting for server
+    while (i <= MAX_ITERATIONS) {
+      i++
+      const elapsedTime = Date.now() - startTime;
+      if (elapsedTime >= TIMEOUT) { throw new ApplicationExpectationFailed(`${_FUNCTION} - Private server init took too long. (${TIMEOUT / 1000}s timeout reached)`) };
+      if (i > MAX_ITERATIONS) { throw new ApplicationExpectationFailed(`${_FUNCTION} - Private server init took too long. (${MAX_ITERATIONS} iterations limit reached)`) };
 
-        // take a screenshot of the area
-        const screenshot = await System.CoordinateToRawBuffer(SCREENSHOT_AREA);
+      // take a screenshot of the area
+      const screenshot = await System.CoordinateToRawBuffer(SCREENSHOT_AREA);
 
-        // save screenshot for debugging purposes
-        // await System.SaveRawBufferToFile(screenshot, path.resolve(`src/tests/images/waitingservertest_${i}.png`));
+      // save screenshot for debugging purposes
+      // await System.SaveRawBufferToFile(screenshot, path.resolve(`src/tests/images/waitingservertest_${i}.png`));
 
-        // read the text from the screenshot
-        const ocrResult = await System.OCRfromRawBuffer(screenshot);
-        const ocrText = ocrResult.text.toLowerCase();
+      // read the text from the screenshot
+      const ocrResult = await System.OCRfromRawBuffer(screenshot);
+      const ocrText = ocrResult.text.toLowerCase();
 
-        // calculate the similarity of the two strings. Threshold should be low, because the text is really tiny. its about 0.5/0.66 acc
-        const similarity = ss.compareTwoStrings(ocrText, EXPECTED_TEXT);
+      // calculate the similarity of the two strings. Threshold should be low, because the text is really tiny. its about 0.5/0.66 acc
+      const similarity = ss.compareTwoStrings(ocrText, EXPECTED_TEXT);
 
-        // if it hits the threshold, its probably still waiting for server
-        if (similarity > SIMILARITY_THRESHOLD) {
-          // its probably waiting for the server
-          // log the iteration number, the ocr text and similarity
-          log.debug(`${_FUNCTION} - #${i} OCR: "${ocrText}", Similarity: ${similarity}`);
-          IS_WAITING_SERVER = true;
-        } else {
-          // its not waiting for server anymore, we can proceed with the script
-          log.debug(`${_FUNCTION} - #${i} OCR: "${ocrText}", Similarity: ${similarity}`);
-          log.debug(`${_FUNCTION} - #${i} Its not waiting for server anymore!`);
-          IS_WAITING_SERVER = false;
-          break;
-        }
-
-        // waits INTERVAL before repeating
-        await new Promise(resolve => setTimeout(resolve, INTERVAL));
+      // if it hits the threshold, its probably still waiting for server
+      if (similarity > SIMILARITY_THRESHOLD) {
+        // its probably waiting for the server
+        // log the iteration number, the ocr text and similarity
+        log.debug(`${_FUNCTION} - #${i} OCR: "${ocrText}", Similarity: ${similarity}`);
+        IS_WAITING_SERVER = true;
+      } else {
+        // its not waiting for server anymore, we can proceed with the script
+        log.debug(`${_FUNCTION} - #${i} OCR: "${ocrText}", Similarity: ${similarity}`);
+        log.debug(`${_FUNCTION} - #${i} Its not waiting for server anymore!`);
+        IS_WAITING_SERVER = false;
+        break;
       }
 
-      return IS_WAITING_SERVER; // Retorna se ainda está esperando o servidor ou não
+      // waits INTERVAL before repeating
+      await new Promise(resolve => setTimeout(resolve, INTERVAL));
     }
+
+    return IS_WAITING_SERVER; // Retorna se ainda está esperando o servidor ou não
+  }
 
   async WaitForPlayButton(config = {}) {
-      const _FUNCTION = "Roblox:WaitForPlayButton";
+    const _FUNCTION = "Roblox:WaitForPlayButton";
 
-      const {
-        TIMEOUT = config?.TIMEOUT || 1000 * 10, // default 10s
-        MAX_ITERATIONS = config?.MAX_ITERATIONS || 10, // default 10 iterations in 10 seconds 
-      } = config;
+    const {
+      TIMEOUT = config?.TIMEOUT || 1000 * 10, // default 10s
+      MAX_ITERATIONS = config?.MAX_ITERATIONS || 10, // default 10 iterations in 10 seconds 
+    } = config;
 
-      const INTERVAL_PER_ITERATION = TIMEOUT / MAX_ITERATIONS;
-      let PLAY_BUTTON_FOUND = false;
-      let RELATIVE_PLAY_BUTTON_CENTER
-      let RELATIVE_PLAY_BUTTON_POSITION
+    const INTERVAL_PER_ITERATION = TIMEOUT / MAX_ITERATIONS;
+    let PLAY_BUTTON_FOUND = false;
+    let PLAY_BUTTON
 
-      for (let i = 0; i < MAX_ITERATIONS; i++) {
+    for (let i = 0; i < MAX_ITERATIONS; i++) {
 
-        // Obtaining Roblox's window relative position
-        const { x, y, width, height } = this.Position()
+      PLAY_BUTTON = this.getPlayButtonPosition();
 
-        // Calculate the center point (x, y)
-        const centerX = x + width / 2;
-        const centerY = y + height / 2;
+      log.trace(`${_FUNCTION} - Looking for Play Button, iteration #${i}`);
 
-        // Adjust relative positions based on a specific size if needed (for the play button size)
-        const buttonWidth = width * 0.20; // Example play button width
-        const buttonHeight = height * 0.13; // Example play button height
+      // screenshot playbutton position
+      const screenshot = await System.CoordinateToRawBuffer(PLAY_BUTTON.position); // should perfectly capture the play button
 
-        // Shift the box 50 pixels down
-        const yOffset = height * 0.35;
+      // TESTING : saving the screenshot in a file just to check
+      // await System.SaveRawBufferToFile(screenshot, path.resolve("src/tests/images/playbuttontest.png"));
 
-        // Now calculate the relative position of the play button around the center, adjusted by 50 pixels down
-        const x1 = centerX - buttonWidth / 2;
-        const y1 = centerY - buttonHeight / 2 + yOffset;
-        const x2 = centerX + buttonWidth / 2;
-        const y2 = centerY + buttonHeight / 2 + yOffset;
-
-        RELATIVE_PLAY_BUTTON_POSITION = [[x1, y1], [x2, y2]];
-        RELATIVE_PLAY_BUTTON_CENTER = { x: ((x1 + x2) / 2), y: ((y1 + y2) / 2) };
-        log.trace(`${_FUNCTION} - Looking for Play Button, iteration #${i}`);
-
-        // screenshot playbutton position
-        const screenshot = await System.CoordinateToRawBuffer(RELATIVE_PLAY_BUTTON_POSITION); // should perfectly capture the play button
-
-        // // TESTING : saving the screenshot in a file just to check
-        // await System.SaveRawBufferToFile(screenshot, path.resolve("src/tests/images/playbuttontest.png"));
-
-        // reading buffer and checking if it says play
-        const ocrResult = await System.OCRfromRawBuffer(screenshot);
-        const ocrText = ocrResult.text.toLowerCase();
-        if (ocrText.includes("play")) {
-          log.trace(`${_FUNCTION} - Found in iteration #${i}`);
-          PLAY_BUTTON_FOUND = true;
-          break
-        }
-
-        // play not found, repeat again
-        await new Promise(resolve => setTimeout(resolve, INTERVAL_PER_ITERATION));
+      // reading buffer and checking if it says play
+      const ocrResult = await System.OCRfromRawBuffer(screenshot);
+      const ocrText = ocrResult.text.toLowerCase();
+      if (ocrText.includes("play")) {
+        log.trace(`${_FUNCTION} - Found in iteration #${i}`);
+        PLAY_BUTTON_FOUND = true;
+        break
       }
 
-      if (!PLAY_BUTTON_FOUND) {
-        throw new OcrExpectationFailed(`${_FUNCTION} - Play button not found after ${MAX_ITERATIONS} iterations`);
-      }
-
-      // if play found, click button
-      log.unit(`${_FUNCTION} - Play button found! Clicking...`);
-      System.MouseClick(RELATIVE_PLAY_BUTTON_CENTER.x, RELATIVE_PLAY_BUTTON_CENTER.y);
+      // play not found, repeat again
+      await new Promise(resolve => setTimeout(resolve, INTERVAL_PER_ITERATION));
     }
 
+    if (!PLAY_BUTTON_FOUND) {
+      throw new OcrExpectationFailed(`${_FUNCTION} - Play button not found after ${MAX_ITERATIONS} iterations`);
+    }
+
+    // if play found, click button
+    log.unit(`${_FUNCTION} - Play button found! Clicking...`);
+    System.MouseClick(PLAY_BUTTON.center.x, PLAY_BUTTON.center.y);
   }
+
+}
 
 module.exports = {
   Roblox: new Roblox(),

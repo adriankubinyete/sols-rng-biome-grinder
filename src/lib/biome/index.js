@@ -7,7 +7,7 @@ const { System } = require(path.resolve("src/lib/system"));
 const { Roblox } = require(path.resolve("src/lib/roblox"));
 const { Discord } = require(path.resolve("src/lib/discord"));
 const { getCurrentTimeFormatted } = require(path.resolve("src/lib/utils"));
-const { Logger } = require( path.resolve("src/lib/utils/logger") );
+const { Logger } = require(path.resolve("src/lib/utils/logger"));
 const log = new Logger('Biomes', false).setLevel(999).setLocation(path.resolve("logs/srbg.log")).create()
 
 const SIMILAR = {
@@ -150,9 +150,22 @@ class Biomes {
 
   // TODO(adrian): implement or delete this. not used as of now
   // should contain image modifications before ocr
-  prepareBufferForOCR(bitmap, config = {}) {
+  async prepareBufferForOCR(bitmap, config = {}) {
     const _FUNCTION = "Biomes:prepareBufferForOCR";
+    const {
+      STRENGTH = config?.STRENGTH || 1, // for now only affects size
+    } = config;
+    let processedBuffer;
 
+    // enlarging image (this messes with ss alignment, be careful)
+    // TODO(adrian): make this align to the left, not to the center. can potentially lead to false-positives
+    log.trace(`${_FUNCTION} - STR:${STRENGTH} : Enlarging image...`);
+    const newWidth = Math.round(bitmap.width + (STRENGTH * 38));
+    const newHeight = Math.round(bitmap.height + (STRENGTH * 7.5));
+    processedBuffer = await System.ResizeFromRawBuffer(bitmap, newWidth, newHeight);
+
+    // applying the color matrix on the image (should help ocr)
+    log.trace(`${_FUNCTION} - STR:${STRENGTH} : Applying color matrix...`);
     const colorMatrix = [
       2, 0, 0, 0, 0,
       0, 1.5, 0, 0, 0,
@@ -160,6 +173,9 @@ class Biomes {
       0, 0, 0, 1, 0,
       0, 0, 0.2, 0, 1,
     ];
+    processedBuffer = await System.ApplyColorMatrixToRawBuffer(processedBuffer, colorMatrix);
+
+    return processedBuffer;
   }
 
   // take some text and check the most likely biome
@@ -291,42 +307,29 @@ class Biomes {
     // if we find a biome with confidence, we break out of the loop
     for (let index = 1; index <= 10; index++) {
 
-      // obtaning current biome buffer
-      const rawBuffer = await this.getBiomeAsRawBuffer();
+      // taking screenshot and reading it
+      const rawBuffer = await this.getBiomeAsRawBuffer(); // generating buffer
+      const postprocessedBuffer = await this.prepareBufferForOCR(rawBuffer, {STRENGTH: index}); // filters to make ocr more accurate
+      const ocrResult = await System.OCRfromRawBuffer(postprocessedBuffer); // sending to tesseract ocr
 
-      // enlarging image (this messes with ss alignment, be careful)
-      const newWidth = Math.round(rawBuffer.width + index * 38);
-      const newHeight = Math.round(rawBuffer.height + index * 7.5);
-      const resizedBuffer = await System.ResizeFromRawBuffer(rawBuffer, newWidth, newHeight);
-
-      // System.SaveRawBufferToFile(resizedBuffer, path.resolve(`src/tests/images/screenshot-${Date.now()}.png`));
-
-      // applying the color matrix on the image (should help ocr)
-      const transformedBuffer = await System.ApplyColorMatrixToRawBuffer(resizedBuffer, colorMatrix);
-
-      // send buffer to ocr
-      const ocrResult = await System.OCRfromRawBuffer(transformedBuffer);
-
-      // pass ocr result to algorithm which checks valid biomes from text.
+      // checking if the ocr result maps to a valid biome
       identifiedBiome = this.identifyBiome(ocrResult.text, { DEBUG_SCAN: IDENTIFYBIOME_DEBUG, CONFIDENCE_THRESHOLD: IDENTIFYBIOME_THRESHOLD });
       log.debug(`${_FUNCTION} >> #${index} : Biome: "${identifiedBiome.biome}" | Confidence: '${identifiedBiome.confidence}' | OCR: "${ocrResult.text.replace(/\n/g, "")}"`)
 
 
-      // saving image if needed
+      // saving screenshot if needed
       if (SAVE_SS_ITERATIONS) {
         const ssName = `${identifiedBiome.biome.toLowerCase()}_${idForSS}_iter${index}_conf${identifiedBiome.confidence}.png`;
         const ssPath = path.resolve("src/tests/images/", ssName);
-        await System.SaveRawBufferToFile(transformedBuffer, ssPath);
+        await System.SaveRawBufferToFile(postprocessedBuffer, ssPath);
       } else if (SAVE_UNKNOWN && identifiedBiome.biome === "Unknown") {
         const ssName = `${identifiedBiome.biome.toLowerCase()}_${idForSS}_iter${index}_conf${identifiedBiome.confidence}.png`;
         const ssPath = path.resolve("src/tests/images/ocr-biome-failed", ssName);
-        await System.SaveRawBufferToFile(transformedBuffer, ssPath);
+        await System.SaveRawBufferToFile(postprocessedBuffer, ssPath);
       }
 
-      // Verifica se o bioma foi identificado
-      if (identifiedBiome && identifiedBiome.biome !== "Unknown") {
-        break; // Sai do loop se o bioma foi identificado
-      }
+      // checking if we found a valid biome. if not, we repeat the loop
+      if (identifiedBiome && identifiedBiome.biome !== "Unknown") { break };
     }
 
     if (!identifiedBiome) {

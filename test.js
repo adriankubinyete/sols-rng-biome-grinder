@@ -4,6 +4,7 @@ const { Roblox } = require(path.resolve("src/lib/roblox"));
 const { System } = require(path.resolve("src/lib/system"));
 const { Biomes } = require(path.resolve("src/lib/biome"));
 const { Discord } = require(path.resolve("src/lib/discord"));
+const { SolsTests } = require(path.resolve("src/tests"));
 const robot = require("robotjs"); // screen to bitmap, and user input
 const nwm = require("node-window-manager");
 const wm = {
@@ -14,6 +15,16 @@ const wm = {
 
 
 (async () => {
+
+
+  // SolsTests.CompleteRoutine.PlayButton();
+  // SolsTests.CompleteRoutine.IdentifyCurrentBiome();
+  // SolsTests.CompleteRoutine.AllSideMenus();
+  // SolsTests.Hover.Chat();
+  // SolsTests.Hover.AutoRoll();
+  // SolsTests.Hover.CloseCollection();
+
+  SolsTests.CompleteRoutine.SimulateServerRoll();
 
   // Roblox.Window({AUTOCORRECT: true});
   // const [CLICK_X, CLICK_Y] = [  10.294117647058822, 7.396870554765292  ]
