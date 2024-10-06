@@ -4,22 +4,15 @@
   "main": "main.js",
   "scripts": {
     "test": "node test.js",
-    "prod": "set NODE_ENV=production&& node main.js",
-    "dev": "set NODE_ENV=dev&& node main.js"
+    "app": "node src/app.js",
+    "dev": "node test.js"
   },
   "author": "",
   "license": "ISC",
   "description": "",
   "dependencies": {
-    "@nut-tree-fork/nut-js": "^4.2.2",
-    "canvas": "^2.11.2",
-    "chalk": "^5.3.0",
-    "cross-env": "^7.0.3",
     "discord-webhook-node": "^1.1.8",
-    "discord.js": "^14.16.2",
     "dotenv": "^16.4.5",
-    "fast-levenshtein": "^3.0.0",
-    "jimp": "^1.6.0",
     "node-window-manager": "^2.2.4",
     "node-windows": "^1.0.0-beta.8",
     "robotjs": "^0.6.0",

@@ -49,9 +49,9 @@ const wm = {
   // await Roblox.bringToTop({ MAXIMIZE: true }) // test if this work properly please
   // System.sleep(2500) // wait 2 seconds after you told game to open, to guarantee it's open
   // await Roblox.CheckIfWaitingServer();
-  console.log('------ END ---------')
+  // console.log('------ END ---------')
   // Roblox.MonitorMousePosition();
-  Roblox.ClickYouveFoundSkipButton();
+  // Roblox.ClickYouveFoundSkipButton();
   // await System.sleep(1000 * 4) // game is opening, give it some time
 
 
