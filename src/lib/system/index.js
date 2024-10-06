@@ -268,11 +268,11 @@ class System {
     // DEBUG: save to file to check, if needed
     // const GRAYSCALE_PATH = path.resolve(`src/tests/images/grayscale-${Date.now()}.png`);
     // log.unit(`${_FUNCTION} - Saving the grayscale image to check: ${GRAYSCALE_PATH}`);
-    await this.SaveRawBufferToFile({
-      buffer: grayscaleBuffer,
-      width: bitmap.width,
-      height: bitmap.height
-    }, GRAYSCALE_PATH);
+    // await this.SaveRawBufferToFile({
+    //   buffer: grayscaleBuffer,
+    //   width: bitmap.width,
+    //   height: bitmap.height
+    // }, GRAYSCALE_PATH);
 
     return {
       buffer: grayscaleBuffer,
