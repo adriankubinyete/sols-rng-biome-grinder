@@ -1,7 +1,5 @@
 #!/usr/bin/node
 
-// HoverEverySideMenuButton();
-// ToggleChatTwice();
 class Tests {
     constructor (AUTO_LOG_TIME = false) {
         this.AUTO_LOG_TIME = AUTO_LOG_TIME;
@@ -52,6 +50,8 @@ class Tests {
     }
 
 }
+
+// testing is not implemented yet, but it will be soon!
 
 module.exports = {
     Tests
