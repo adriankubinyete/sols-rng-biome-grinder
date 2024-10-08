@@ -35,11 +35,13 @@ If we scale that using the same estimate, it should take around 12.5 hours for T
 
 # - The future?
 Well, I would love to see this idea implemented on a real macro. This is basically just a proof-of-concept that this works, it's not very user-friendly to utilize too...
+```
 [ ] User interface (not sure if possible with my abilities) (probably can do with NodeJS electron-app)
 [ ] Auto use heavenly potions on specific, configurable biomes (scary!)
 [X] 1920x1080 (FHD) support
 [X] 2560x1440 (QHD) support
 [ ] 3840x2160 (UHD) support ( I'll fix this eventually, I don't have a UHD monitor to test unfortunately )
+```
 
 # - How to set up?
 This project is NOT very user-friendly to utilize, it does not have an interface nor keys to stop the program easily.
