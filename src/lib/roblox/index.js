@@ -12,8 +12,6 @@ const windowManager = {
   ...nwm.addon,
   ...nwm.windowManager,
 };
-
-const TEMPORARY_PRIVATE_URL = "https://www.roblox.com/games/15532962292?privateServerLinkCode=48477360821955658485761705534051";
 class RobloxError extends Error {
   constructor(message) {
     super(message);
@@ -161,7 +159,7 @@ class Roblox {
 
     if (this.privateServerLink) return this.privateServerLink;
 
-    const PVT_SERVER = CONFIGURATION.roblox.privateServerLink // get private from config, and break code down from there
+    const PVT_SERVER = CONFIGURATION.roblox.private_server_link // get private from config, and break code down from there
     const privateServerUrl = new URL(PVT_SERVER);
     const privateServerCode = privateServerUrl.searchParams.get(
       "privateServerLinkCode"
