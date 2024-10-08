@@ -636,22 +636,23 @@ class Roblox {
   AlignCamera(config = {}) {
     const _FUNCTION = "Roblox:AlignCamera";
 
-    System.sleep(1500);
-
-    log.trace(`${_FUNCTION}: Toggling chat...`);
-    this.ToggleChat(); // should ocr this is open or closed
+    // System.sleep(1500);
+    
+    // TODO[CRITICAL](adrian): check if chat is open already, else this will fail miserably
+    // log.trace(`${_FUNCTION}: Toggling chat...`);
+    // this.ToggleChat(); // should ocr this is open or closed
 
     // trying to open collection
-    log.trace(`${_FUNCTION}: Opening collection...`);
-    this.OpenCollection();
-    System.sleep(500);
-    this.OpenCollection();
+    // log.trace(`${_FUNCTION}: Opening collection...`);
+    // this.OpenCollection();
+    // System.sleep(500);
+    // this.OpenCollection();
 
     // now trying to close it
-    log.trace(`${_FUNCTION}: Closing collection...`);
-    this.CloseCollection(); // should ocr this is actually closed
-    System.sleep(500); // fuck you, just in case  //TODO(adrian): remove this once OCR for this is implemented
-    this.CloseCollection(); // please?
+    // log.trace(`${_FUNCTION}: Closing collection...`);
+    // this.CloseCollection(); // should ocr this is actually closed
+    // System.sleep(500); // fuck you, just in case  //TODO(adrian): remove this once OCR for this is implemented
+    // this.CloseCollection(); // please?
 
     // blind click on "SKIP", just in case
     log.trace(`${_FUNCTION}: Blindly clicking "SKIP" button from "You've Found" prompt...`);
