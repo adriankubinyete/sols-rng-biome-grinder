@@ -25,7 +25,7 @@ const USER_CONFIGURATION = {
     roblox: {
         // Set your desired roblox configuration under here.
         // Should only need to change the private server link. It should be the same used in Dolphsols.
-        private_server_link: "https://www.roblox.com/games/15532962292?privateServerLinkCode=48477360821955658485761705534051", // your entire private server link
+        private_server_link: "https://www.roblox.com/games/15532962292/Sols-RNG-Era-9?privateServerLinkCode=83338549084739556308838773836658", // your entire private server link
     },
     discord: {
         // Set your desired discord configuration under here.

@@ -161,7 +161,7 @@ class Roblox {
 
     if (this.privateServerLink) return this.privateServerLink;
 
-    const PVT_SERVER = process.env.PRIVATE_SERVER ?? TEMPORARY_PRIVATE_URL; // could move down, useless but verbose :)
+    const PVT_SERVER = CONFIGURATION.roblox.privateServerLink // get private from config, and break code down from there
     const privateServerUrl = new URL(PVT_SERVER);
     const privateServerCode = privateServerUrl.searchParams.get(
       "privateServerLinkCode"
