@@ -1,3 +1,11 @@
+# >>> <!> PEOPLE COMING FROM SKIES VIDEO, READ THIS <!> <<<
+PLEASE do not use this anymore. **It does NOT work for Eon 1**. It was meant for Era 9. // (alignment issues that I am meant to update because the UI changed in this new update)
+
+I can't promise I'll make an Eon 1+ version of this, as I've grown tired of this game.
+You might be able to find someone working on a similar project of this.
+
+Good luck glitched hunting!
+
 # - What?
 This is a hobby project I tried to implement from an idea I had, after noticing you could create a fresh private server and spawn into a biome directly.
 
